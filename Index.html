@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Barcode Scanner</title>
+  
+  <!-- iPhone beginscherm instellingen -->
+  <link rel="apple-touch-icon" href="https://upload.wikimedia.org/wikipedia/commons/6/6b/Barcode-128.svg">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Barcode Scanner">
+  
+  <style>
+    body,html {margin:0;padding:0;height:100%;}
+    #reader {width:100%;height:100vh;display:flex;align-items:center;justify-content:center;}
+    #greenScreen {
+      display:none;
+      position:fixed;inset:0;
+      background:#00c853;
+      color:white;
+      font-size:2em;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-family:sans-serif;
+    }
+  </style>
+  
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
+</head>
+<body>
+  <div id="reader"></div>
+  <div id="greenScreen">SCAN OK ✅</div>
+
+  <script>
+    const readerElem = document.getElementById('reader');
+    const green = document.getElementById('greenScreen');
+    const qrScanner = new Html5Qrcode("reader");
+
+    function success(decodedText, decodedResult) {
+      qrScanner.stop().then(() => {
+        green.style.display = "flex";
+      }).catch(err => console.error("Stop error", err));
+    }
+
+    function error(err) {
+      // negeer scanfouten
+    }
+
+    Html5Qrcode.getCameras().then(cameras => {
+      if (cameras && cameras.length) {
+        qrScanner.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: 250, formatsToSupport: [
+              Html5QrcodeSupportedFormats.CODE_128,
+              Html5QrcodeSupportedFormats.EAN_13,
+              Html5QrcodeSupportedFormats.EAN_8,
+              Html5QrcodeSupportedFormats.UPC_A,
+              Html5QrcodeSupportedFormats.UPC_E
+            ]
+          },
+          success,
+          error
+        );
+      } else {
+        readerElem.innerHTML = "<p>Geen camera gevonden.</p>";
+      }
+    }).catch(err=>{
+      readerElem.innerHTML = "<p>Camera niet beschikbaar of geweigerd.</p>";
+    });
+  </script>
+</body>
+</html>
