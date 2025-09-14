@@ -1,106 +1,114 @@
 <!doctype html>
 <html lang="nl">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Barcode Scanner</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Barcode Scanner</title>
 
-  <!-- iPhone beginscherm instellingen -->
-  <link rel="apple-touch-icon" href="https://upload.wikimedia.org/wikipedia/commons/6/6b/Barcode-128.svg">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="Barcode Scanner">
+<link rel="apple-touch-icon" href="https://upload.wikimedia.org/wikipedia/commons/6/6b/Barcode-128.svg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Barcode Scanner">
 
-  <style>
-    body, html { margin:0; padding:0; height:100%; font-family:sans-serif; }
-    #reader { width:100%; height:100vh; display:flex; align-items:center; justify-content:center; }
-    #greenScreen {
-      display:none;
-      position:fixed; inset:0;
-      background:#00c853;
-      color:white;
-      font-size:2em;
-      display:flex;
-      flex-direction: column;
-      align-items:center;
-      justify-content:center;
-    }
-    button {
-      padding: 10px 20px;
-      font-size: 1em;
-      margin-top: 20px;
-      border:none;
-      border-radius: 5px;
-      background:white;
-      color:black;
-    }
-  </style>
+<style>
+  body, html {margin:0; padding:0; height:100%; font-family:sans-serif; background:black;}
+  #reader {width:100%; height:100vh; display:flex; align-items:center; justify-content:center; background:black;}
+  #greenScreen {
+    display:none;
+    position:absolute; inset:0;
+    background:#00c853;
+    color:white;
+    font-size:2em;
+    display:flex;
+    flex-direction: column;
+    align-items:center;
+    justify-content:center;
+    z-index: 20;
+  }
+  button {
+    padding: 12px 24px;
+    font-size: 1em;
+    margin-top: 20px;
+    border:none;
+    border-radius: 5px;
+    background:white;
+    color:black;
+    z-index: 10;
+    cursor:pointer;
+  }
+  #startBtn {
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%, -50%);
+    z-index: 10;
+  }
+</style>
 
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
 </head>
 <body>
-  <div id="reader"></div>
 
-  <div id="greenScreen">
-    SCAN OK ✅
-    <button id="resetBtn">Reset Scanner</button>
-  </div>
+<div id="reader"></div>
 
-  <button id="startBtn" style="position:fixed;top:50%;left:50%;transform:translate(-50%, -50%);padding:20px;font-size:1.2em;">Start Scanner</button>
+<div id="greenScreen">
+  SCAN OK ✅
+  <button id="resetBtn">Reset Scanner</button>
+</div>
 
-  <script>
-    const readerElem = document.getElementById('reader');
-    const green = document.getElementById('greenScreen');
-    const startBtn = document.getElementById('startBtn');
-    const resetBtn = document.getElementById('resetBtn');
+<button id="startBtn">Start Scanner</button>
 
-    const qrScanner = new Html5Qrcode("reader");
+<script>
+const readerElem = document.getElementById('reader');
+const green = document.getElementById('greenScreen');
+const startBtn = document.getElementById('startBtn');
+const resetBtn = document.getElementById('resetBtn');
 
-    function success(decodedText, decodedResult) {
-      qrScanner.stop().then(() => {
-        readerElem.style.display = "none";
-        green.style.display = "flex";
-      }).catch(err => console.error("Stop error", err));
+const qrScanner = new Html5Qrcode("reader");
+
+function success(decodedText, decodedResult) {
+  qrScanner.stop().then(() => {
+    readerElem.style.display = "none";
+    green.style.display = "flex";
+  }).catch(err => console.error("Stop error", err));
+}
+
+function error(err) {}
+
+function startScanner() {
+  green.style.display = "none";
+  readerElem.style.display = "flex";
+  Html5Qrcode.getCameras().then(cameras => {
+    if(cameras && cameras.length) {
+      qrScanner.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: 250, formatsToSupport: [
+            Html5QrcodeSupportedFormats.CODE_128,
+            Html5QrcodeSupportedFormats.EAN_13,
+            Html5QrcodeSupportedFormats.EAN_8,
+            Html5QrcodeSupportedFormats.UPC_A,
+            Html5QrcodeSupportedFormats.UPC_E
+          ]
+        },
+        success,
+        error
+      );
+    } else {
+      readerElem.innerHTML = "<p style='color:white;'>Geen camera gevonden.</p>";
     }
+  }).catch(err=>{
+    readerElem.innerHTML = "<p style='color:white;'>Camera niet beschikbaar of geweigerd.</p>";
+  });
+}
 
-    function error(err) {
-      // negeer scanfouten
-    }
+startBtn.addEventListener('click', () => {
+  startBtn.style.display = "none";
+  startScanner();
+});
 
-    function startScanner() {
-      green.style.display = "none";
-      readerElem.style.display = "flex";
-      Html5Qrcode.getCameras().then(cameras => {
-        if(cameras && cameras.length) {
-          qrScanner.start(
-            { facingMode: "environment" },
-            { fps: 10, qrbox: 250, formatsToSupport: [
-                Html5QrcodeSupportedFormats.CODE_128,
-                Html5QrcodeSupportedFormats.EAN_13,
-                Html5QrcodeSupportedFormats.EAN_8,
-                Html5QrcodeSupportedFormats.UPC_A,
-                Html5QrcodeSupportedFormats.UPC_E
-              ]
-            },
-            success,
-            error
-          );
-        } else {
-          readerElem.innerHTML = "<p>Geen camera gevonden.</p>";
-        }
-      }).catch(err=>{
-        readerElem.innerHTML = "<p>Camera niet beschikbaar of geweigerd.</p>";
-      });
-    }
+resetBtn.addEventListener('click', () => {
+  startScanner();
+});
+</script>
 
-    startBtn.addEventListener('click', () => {
-      startBtn.style.display = "none";
-      startScanner();
-    });
-
-    resetBtn.addEventListener('click', () => {
-      startScanner();
-    });
-
-  </script>
 </body>
 </html>
