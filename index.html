@@ -4,73 +4,38 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Barcode Scanner</title>
-
 <link rel="apple-touch-icon" href="https://upload.wikimedia.org/wikipedia/commons/6/6b/Barcode-128.svg">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Barcode Scanner">
 
 <style>
-  body, html { 
-    margin:0; padding:0; height:100%; background:black; font-family:sans-serif; color:white; 
-    display:flex; flex-direction:column; justify-content:space-between; align-items:center;
-  }
-
-  /* Scanner en groene scherm */
-  #reader { display:none; width:100%; height:100vh; }
-  #greenScreen {
-    display:none;
-    position:absolute; inset:0;
-    background:#00c853;
-    color:white;
-    font-size:2em;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    z-index:20;
-  }
-
-  /* Knoppen */
-  button {
-    border:none; border-radius:10px; cursor:pointer;
-    font-weight:bold; box-shadow:0 2px 5px rgba(0,0,0,0.3);
-  }
-
-  #startBtn {
-    padding:18px 40px; font-size:1.3em; background:white; color:black;
-    margin-bottom:40px;
-    z-index:10;
-  }
-
-  #resetBtn {
-    padding:12px 30px; font-size:1.1em; background:white; color:black;
-    margin-top:30px;
-    z-index:10;
-  }
-
-  #backBtn {
-    padding:18px 40px; font-size:1.2em; background:white; color:black;
-    margin-top:30px;
-  }
+body, html {
+  margin:0; padding:0; height:100%; background:black; font-family:sans-serif; color:white;
+  display:flex; flex-direction:column; justify-content:space-between; align-items:center;
+}
+#reader { display:none; width:100%; height:60%; }
+#greenScreen {
+  display:none; position:absolute; inset:0; background:#00c853; color:white;
+  font-size:2em; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:20;
+}
+button {
+  border:none; border-radius:12px; cursor:pointer; font-weight:bold; box-shadow:0 2px 5px rgba(0,0,0,0.3);
+}
+#startBtn { padding:20px 50px; font-size:1.4em; background:white; color:black; margin-bottom:30px; z-index:10; }
+#resetBtn { padding:15px 40px; font-size:1.2em; background:white; color:black; margin-top:30px; z-index:10; }
+#backBtn { padding:20px 50px; font-size:1.3em; background:white; color:black; margin-top:30px; }
 </style>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
 </head>
 <body>
 
-<!-- Reset knop bovenaan -->
 <button id="resetBtn">Reset Scanner</button>
-
-<!-- Scanner viewer -->
 <div id="reader"></div>
-
-<!-- Groen scherm na scan -->
 <div id="greenScreen">
   SCAN OK ✅
   <button id="backBtn">Terug naar beginscherm</button>
 </div>
-
-<!-- Start knop onderaan -->
 <button id="startBtn">Start Scanner</button>
 
 <script>
@@ -79,59 +44,58 @@ const green = document.getElementById('greenScreen');
 const startBtn = document.getElementById('startBtn');
 const resetBtn = document.getElementById('resetBtn');
 const backBtn = document.getElementById('backBtn');
-
 const qrScanner = new Html5Qrcode("reader");
-
-function success(decodedText, decodedResult) {
-  qrScanner.stop().then(() => {
-    readerElem.style.display = "none";
-    green.style.display = "flex";
-  }).catch(err => console.error("Stop error", err));
-}
-
-function error(err) {}
+let scannerActive = false;
 
 function startScanner() {
   green.style.display = "none";
   readerElem.style.display = "flex";
+  scannerActive = true;
+
   Html5Qrcode.getCameras().then(cameras => {
     if(cameras && cameras.length) {
       qrScanner.start(
         { facingMode: "environment" },
         { fps: 10, qrbox: 250, formatsToSupport: [
-            Html5QrcodeSupportedFormats.CODE_128,
-            Html5QrcodeSupportedFormats.EAN_13,
-            Html5QrcodeSupportedFormats.EAN_8,
-            Html5QrcodeSupportedFormats.UPC_A,
-            Html5QrcodeSupportedFormats.UPC_E
-          ]
+          Html5QrcodeSupportedFormats.CODE_128,
+          Html5QrcodeSupportedFormats.EAN_13,
+          Html5QrcodeSupportedFormats.EAN_8,
+          Html5QrcodeSupportedFormats.UPC_A,
+          Html5QrcodeSupportedFormats.UPC_E
+        ] },
+        (decodedText, decodedResult) => {
+          qrScanner.stop().then(() => {
+            readerElem.style.display = "none";
+            green.style.display = "flex";
+            scannerActive = false;
+          });
         },
-        success,
-        error
+        (err) => {}
       );
     } else {
       readerElem.innerHTML = "<p style='color:white;'>Geen camera gevonden.</p>";
     }
-  }).catch(err=>{
+  }).catch(err => {
     readerElem.innerHTML = "<p style='color:white;'>Camera niet beschikbaar of geweigerd.</p>";
   });
 }
 
-// Start scanner knop
+// Start-knop
 startBtn.addEventListener('click', () => {
   startBtn.style.display = "none";
   startScanner();
 });
 
-// Reset knop bovenaan
+// Reset-knop
 resetBtn.addEventListener('click', () => {
-  startBtn.style.display = "block";
-  green.style.display = "none";
+  if(scannerActive) qrScanner.stop().catch(()=>{});
   readerElem.style.display = "none";
-  qrScanner.stop().catch(()=>{});
+  green.style.display = "none";
+  startBtn.style.display = "block";
+  scannerActive = false;
 });
 
-// Terug naar beginscherm knop op groen scherm
+// Terug-knop op groen scherm
 backBtn.addEventListener('click', () => {
   green.style.display = "none";
   startBtn.style.display = "block";
